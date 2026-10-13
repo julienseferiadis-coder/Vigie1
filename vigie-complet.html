@@ -135,18 +135,23 @@ function finishSession(type,o){
 }
 
 // ---------- test tactile ----------
+function rhythm(){const k=[[2.2,4,70,2400],[.7,1.5,420,1400],[1.4,2.6,200,1900]][Math.floor(Math.random()*3)];return{d:k[0]+Math.random()*(k[1]-k[0]),v:k[2],to:k[3]}}
 function touchTest(){
   A.classList.add("light");$("face").classList.add("hide");$("cross").classList.add("hide");
-  T={rts:[],miss:0,fs:0,n:0,act:false,t0:0};show("arena");hud("Touche le point dès qu'il apparaît. Pas avant !");tok++;later(1800,tNext);
+  T={rts:[],miss:0,fs:0,n:0,act:false,t0:0};show("arena");hud("Touche le point dès qu'il apparaît, même s'il bouge. Pas avant !");tok++;later(1800,tNext);
 }
 function tNext(){
   if(T.n>=N){const m=med(T.rts),slow=[...T.rts].sort((a,b)=>b-a).slice(0,3);
     return finishSession("touch",{median:m,misses:T.miss,falseStarts:T.fs,cv:m?sd(T.rts)/m:0,slow:slow.length?sum(slow)/slow.length:m})}
   T.n++;hud(T.n+" / "+N);dot.classList.add("hide");T.act=false;
-  later(1500+Math.random()*2800,()=>{
-    const w=innerWidth,h=innerHeight;dot.style.left=(60+Math.random()*(w-120))+"px";dot.style.top=(80+Math.random()*(h-260))+"px";dot.classList.remove("hide");
-    requestAnimationFrame(()=>{T.t0=performance.now();T.act=true});
-    later(2000,()=>{T.act=false;T.miss++;tNext()});
+  const R=rhythm();later(R.d*1000,()=>{
+    const w=innerWidth,h=innerHeight;let x=60+Math.random()*(w-120),y=80+Math.random()*(h-260),a=Math.random()*6.28;
+    dot.style.left=x+"px";dot.style.top=y+"px";dot.classList.remove("hide");
+    requestAnimationFrame(()=>{T.t0=performance.now();T.act=true;let l=T.t0;
+      (function mv(n){if(!T.act)return;const dt=(n-l)/1000;l=n;x+=Math.cos(a)*R.v*dt;y+=Math.sin(a)*R.v*dt;
+        if(x<40||x>w-40){a=Math.PI-a;x=clamp(x,40,w-40)}if(y<70||y>h-150){a=-a;y=clamp(y,70,h-150)}
+        dot.style.left=x+"px";dot.style.top=y+"px";requestAnimationFrame(mv)})(l)});
+    later(R.to,()=>{T.act=false;T.miss++;tNext()});
   });
 }
 A.addEventListener("pointerdown",()=>{
@@ -196,7 +201,7 @@ function calib(ph){
 function nextTrial(){
   tok++;if(T.n>=N)return endEyes();
   T.n++;T.ph="wait";dot.classList.add("hide");$("cross").classList.remove("hide");hud("Fixe la croix  "+T.n+" / "+N);
-  later(1500+Math.random()*2000,()=>{
+  later(rhythm().d*1000,()=>{
     const now=performance.now()/1000,b=T.buf.filter(s=>s.t>now-.3).map(pr);
     T.p0=b.length?sum(b)/b.length:.5;T.side=Math.random()<.5?-1:1;place(T.side);$("cross").classList.add("hide");dot.classList.remove("hide");
     requestAnimationFrame(()=>{T.on=performance.now()/1000;T.ph="target";T.run2=0});
